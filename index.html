@@ -4,123 +4,72 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Azy IA — Assistente Multimodal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <style>
-  :root{
-    --bg1:#f9e7fb; --bg2:#e3d9ff; --accent:#ff5da2; --muted: #222;
-  }
-  body{ margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(135deg,var(--bg1),var(--bg2)); color:var(--muted); min-height:100vh; display:flex; flex-direction:column;}
-  header{padding:18px 16px;text-align:center;font-weight:700;font-size:20px;color:#222}
-  .wrap{max-width:920px;margin:12px auto;flex:1;display:flex;gap:12px;padding:0 12px}
-  .panel{background:rgba(255,255,255,0.9);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:12px;flex:1}
-  #chat {height:56vh; overflow:auto; padding:12px; border-radius:8px; background:linear-gradient(180deg,#fff,#fff0);}
-  .msg{margin-bottom:12px;padding:12px;border-radius:10px;max-width:80%}
-  .msg.user{background:#222;color:#fff;margin-left:auto}
-  .msg.bot{background:#fafafa;color:#111}
-  footer{display:flex;gap:8px;align-items:center}
-  input[type="text"]{flex:1;padding:12px;border-radius:10px;border:1px solid #eee}
-  button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:10px;font-weight:600;cursor:pointer}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-  select, label{font-size:14px}
-  .small{font-size:13px;color:#666}
-  .leftcol{width:320px;display:flex;flex-direction:column;gap:12px}
-  .file{border:1px dashed #ddd;padding:10px;border-radius:8px;text-align:center}
-  .voice-list{max-height:120px;overflow:auto;border:1px solid #eee;padding:6px;border-radius:8px}
-  @media(max-width:880px){.wrap{flex-direction:column}.leftcol{width:100%}}
+:root{--bg1:#ffeef8;--bg2:#e9e0ff;--accent:#ff4da6;--text:#222}
+body{margin:0;font-family:Inter,Arial,system-ui;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{padding:18px;text-align:center;font-weight:700;font-size:20px}
+.container{max-width:1000px;margin:12px auto;display:flex;gap:12px;padding:0 12px;flex-direction:column}
+.panel{background:rgba(255,255,255,0.95);border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,0.06)}
+#chat{height:54vh;overflow:auto;padding:12px;border-radius:8px;background:#fff}
+.msg{margin-bottom:12px;padding:10px;border-radius:10px;max-width:80%}
+.msg.user{margin-left:auto;background:var(--accent);color:#fff}
+.msg.bot{background:#f4f4f6;color:#111}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input[type="text"]{flex:1;padding:10px;border-radius:8px;border:1px solid #eee}
+button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+.small{font-size:13px;color:#666}
+.leftcol{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(min-width:900px){ .container{flex-direction:row} .leftcol{flex-direction:column;width:320px}}
 </style>
 </head>
 <body>
-<header>🌸 Azy IA — Assistente Multimodal (Text • Image • Video • Voice)</header>
+<header>🌸 Azy IA — Assistente Multimodal (Texto • Imagem • Vídeo • Voz)</header>
+<div class="container">
+  <div class="panel leftcol">
+    <div class="small">Idioma</div>
+    <select id="lang">
+      <option value="auto">Detectar automaticamente</option>
+      <option value="pt">Português</option>
+      <option value="es">Español</option>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+    </select>
 
-<div class="wrap">
-  <div class="leftcol panel">
-    <div>
-      <label class="small">Idioma</label>
-      <select id="language">
-        <option value="auto">Detectar automaticamente</option>
-        <option value="pt">Português</option>
-        <option value="es">Español</option>
-        <option value="en">English</option>
-        <option value="fr">Français</option>
-      </select>
+    <div class="small" style="margin-top:8px">Voz</div>
+    <select id="voice">
+      <option value="female_1">Female 1</option>
+      <option value="female_2">Female 2</option>
+      <option value="male_1">Male 1</option>
+      <option value="neutral_1">Neutral</option>
+    </select>
+
+    <div class="small" style="margin-top:8px">Upload (imagem/vídeo)</div>
+    <input id="file" type="file" accept="image/*,video/*"/>
+
+    <div class="controls" style="margin-top:8px">
+      <button onclick="action('chat')">Enviar Chat</button>
+      <button onclick="action('image')">Gerar Imagem</button>
+      <button onclick="action('video')">Gerar Vídeo</button>
+      <button onclick="action('tts')">Gerar Áudio</button>
     </div>
-
-    <div>
-      <label class="small">Voz (ex.: 24 vozes) </label>
-      <select id="voice">
-        <!-- preencha opções no futuro; atualmente nomes genéricos -->
-        <option value="female_1">Female 1 - Realista</option>
-        <option value="female_2">Female 2 - Natural</option>
-        <option value="male_1">Male 1 - Natural</option>
-        <option value="neutral_1">Neutral 1 - Assistente</option>
-      </select>
-    </div>
-
-    <div>
-      <label class="small">Upload (imagem para editar / usar como prompt)</label>
-      <div class="file">
-        <input id="file" type="file" accept="image/*,video/*" />
-      </div>
-    </div>
-
-    <div>
-      <label class="small">Ações rápidas</label>
-      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-        <button onclick="sendAction('chat')">Enviar Chat</button>
-        <button onclick="sendAction('image')">Gerar Imagem</button>
-        <button onclick="sendAction('video')">Gerar Vídeo</button>
-        <button onclick="sendAction('tts')">Gerar Áudio (TTS)</button>
-      </div>
-    </div>
-
-    <div class="small leftfoot">Obs: geração de vídeo/imagem/voz depende de APIs externas (chaves necessárias). Sem chaves, o servidor responderá com mensagens de teste.</div>
+    <div class="small">Obs: geração de mídia exige chaves externas (OpenAI, ElevenLabs, Runway, Pika).</div>
   </div>
 
   <div class="panel" style="flex:1;display:flex;flex-direction:column">
-    <div id="chat" role="log"></div>
-
-    <footer style="margin-top:auto">
-      <input id="text" type="text" placeholder="Escreva algo (qualquer idioma)..." />
-      <button onclick="sendText()">Enviar</button>
-    </footer>
+    <div id="chat"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="text" type="text" placeholder="Escreva algo..." />
+      <button onclick="send()">Enviar</button>
+    </div>
   </div>
 </div>
 
 <script>
-const chatEl = document.getElementById('chat');
-function addMsg(text, who='bot'){ const d=document.createElement('div'); d.className='msg '+(who==='user'?'user':'bot'); d.innerText=text; chatEl.appendChild(d); chatEl.scrollTop=chatEl.scrollHeight; }
-async function sendText(){
-  const text = document.getElementById('text').value.trim(); if(!text) return;
-  addMsg(text,'user'); document.getElementById('text').value='';
-  await callServer({ action:'chat', message:text });
-}
-async function sendAction(action){
-  const text = document.getElementById('text').value.trim();
-  const fileInput = document.getElementById('file');
-  let file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-  addMsg(`(enviando ${action})`,'user');
-  await callServer({ action, message:text, lang:document.getElementById('language').value, voice:document.getElementById('voice').value }, file);
-}
-
-async function callServer(payload, file=null){
-  const form = new FormData();
-  form.append('payload', JSON.stringify(payload));
-  if(file) form.append('file', file);
-  try{
-    const res = await fetch('/server/chat', { method:'POST', body: form });
-    const data = await res.json();
-    if(data.error) addMsg('Erro: '+data.error);
-    else {
-      if(data.reply) addMsg(data.reply);
-      if(data.imageUrl) addMsg('Imagem gerada: ' + data.imageUrl);
-      if(data.videoUrl) addMsg('Vídeo gerado: ' + data.videoUrl);
-      if(data.ttsUrl) {
-        addMsg('Áudio gerado. Tocando...');
-        const a = new Audio(data.ttsUrl); a.play();
-      }
-    }
-  }catch(err){ addMsg('Erro de rede: '+err.message); }
-}
+const chat = document.getElementById('chat');
+function addMsg(txt,who='bot'){ const d=document.createElement('div'); d.className='msg '+(who==='user'?'user':'bot'); d.innerText=txt; chat.appendChild(d); chat.scrollTop=chat.scrollHeight; }
+async function send(){ const t=document.getElementById('text').value.trim(); if(!t) return; addMsg(t,'user'); document.getElementById('text').value=''; await callServer({action:'chat',message:t,lang:document.getElementById('lang').value,voice:document.getElementById('voice').value}); }
+async function action(action){ const t=document.getElementById('text').value.trim(); const f=document.getElementById('file').files[0]||null; addMsg('('+action+')','user'); await callServer({action, message:t, lang:document.getElementById('lang').value, voice:document.getElementById('voice').value}, f); }
+async function callServer(payload, file=null){ const form=new FormData(); form.append('payload', JSON.stringify(payload)); if(file) form.append('file', file); try{ const res=await fetch('/api/chat', {method:'POST', body: form}); const data=await res.json(); if(data.error) addMsg('Erro: '+data.error); else { if(data.reply) addMsg(data.reply,'bot'); if(data.imageUrl) addMsg('Imagem: '+data.imageUrl); if(data.videoUrl) addMsg('Vídeo: '+data.videoUrl); if(data.ttsUrl){ addMsg('Áudio pronto — tocando...'); const a=new Audio(data.ttsUrl); a.play(); } } }catch(e){ addMsg('Erro de rede: '+e.message);} }
 </script>
 </body>
 </html>
