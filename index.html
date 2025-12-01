@@ -1,33 +1,126 @@
-<script>
-async function sendMessage() {
-  const input = document.getElementById("inputMessage");
-  const text = input.value.trim();
-  if (!text) return;
-
-  // mostrar "carregando" opcional
-  document.getElementById("response").innerText = "Carregando...";
-
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
-    });
-
-    const data = await res.json();
-
-    // se vier erro do backend, mostrar
-    if (!res.ok) {
-      document.getElementById("response").innerText = data?.error || "Erro desconhecido";
-      console.error("Resposta do servidor:", data);
-      return;
-    }
-
-    // exibir reply (ou mensagem de erro se não existir)
-    document.getElementById("response").innerText = data?.reply ?? "Sem resposta (reply undefined)";
-  } catch (err) {
-    console.error("Erro ao chamar /api/chat", err);
-    document.getElementById("response").innerText = "Erro ao conectar ao servidor";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Azy IA — Assistente Multimodal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  :root{
+    --bg1:#f9e7fb; --bg2:#e3d9ff; --accent:#ff5da2; --muted: #222;
   }
+  body{ margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(135deg,var(--bg1),var(--bg2)); color:var(--muted); min-height:100vh; display:flex; flex-direction:column;}
+  header{padding:18px 16px;text-align:center;font-weight:700;font-size:20px;color:#222}
+  .wrap{max-width:920px;margin:12px auto;flex:1;display:flex;gap:12px;padding:0 12px}
+  .panel{background:rgba(255,255,255,0.9);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:12px;flex:1}
+  #chat {height:56vh; overflow:auto; padding:12px; border-radius:8px; background:linear-gradient(180deg,#fff,#fff0);}
+  .msg{margin-bottom:12px;padding:12px;border-radius:10px;max-width:80%}
+  .msg.user{background:#222;color:#fff;margin-left:auto}
+  .msg.bot{background:#fafafa;color:#111}
+  footer{display:flex;gap:8px;align-items:center}
+  input[type="text"]{flex:1;padding:12px;border-radius:10px;border:1px solid #eee}
+  button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:10px;font-weight:600;cursor:pointer}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  select, label{font-size:14px}
+  .small{font-size:13px;color:#666}
+  .leftcol{width:320px;display:flex;flex-direction:column;gap:12px}
+  .file{border:1px dashed #ddd;padding:10px;border-radius:8px;text-align:center}
+  .voice-list{max-height:120px;overflow:auto;border:1px solid #eee;padding:6px;border-radius:8px}
+  @media(max-width:880px){.wrap{flex-direction:column}.leftcol{width:100%}}
+</style>
+</head>
+<body>
+<header>🌸 Azy IA — Assistente Multimodal (Text • Image • Video • Voice)</header>
+
+<div class="wrap">
+  <div class="leftcol panel">
+    <div>
+      <label class="small">Idioma</label>
+      <select id="language">
+        <option value="auto">Detectar automaticamente</option>
+        <option value="pt">Português</option>
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="small">Voz (ex.: 24 vozes) </label>
+      <select id="voice">
+        <!-- preencha opções no futuro; atualmente nomes genéricos -->
+        <option value="female_1">Female 1 - Realista</option>
+        <option value="female_2">Female 2 - Natural</option>
+        <option value="male_1">Male 1 - Natural</option>
+        <option value="neutral_1">Neutral 1 - Assistente</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="small">Upload (imagem para editar / usar como prompt)</label>
+      <div class="file">
+        <input id="file" type="file" accept="image/*,video/*" />
+      </div>
+    </div>
+
+    <div>
+      <label class="small">Ações rápidas</label>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <button onclick="sendAction('chat')">Enviar Chat</button>
+        <button onclick="sendAction('image')">Gerar Imagem</button>
+        <button onclick="sendAction('video')">Gerar Vídeo</button>
+        <button onclick="sendAction('tts')">Gerar Áudio (TTS)</button>
+      </div>
+    </div>
+
+    <div class="small leftfoot">Obs: geração de vídeo/imagem/voz depende de APIs externas (chaves necessárias). Sem chaves, o servidor responderá com mensagens de teste.</div>
+  </div>
+
+  <div class="panel" style="flex:1;display:flex;flex-direction:column">
+    <div id="chat" role="log"></div>
+
+    <footer style="margin-top:auto">
+      <input id="text" type="text" placeholder="Escreva algo (qualquer idioma)..." />
+      <button onclick="sendText()">Enviar</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+const chatEl = document.getElementById('chat');
+function addMsg(text, who='bot'){ const d=document.createElement('div'); d.className='msg '+(who==='user'?'user':'bot'); d.innerText=text; chatEl.appendChild(d); chatEl.scrollTop=chatEl.scrollHeight; }
+async function sendText(){
+  const text = document.getElementById('text').value.trim(); if(!text) return;
+  addMsg(text,'user'); document.getElementById('text').value='';
+  await callServer({ action:'chat', message:text });
+}
+async function sendAction(action){
+  const text = document.getElementById('text').value.trim();
+  const fileInput = document.getElementById('file');
+  let file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+  addMsg(`(enviando ${action})`,'user');
+  await callServer({ action, message:text, lang:document.getElementById('language').value, voice:document.getElementById('voice').value }, file);
+}
+
+async function callServer(payload, file=null){
+  const form = new FormData();
+  form.append('payload', JSON.stringify(payload));
+  if(file) form.append('file', file);
+  try{
+    const res = await fetch('/server/chat', { method:'POST', body: form });
+    const data = await res.json();
+    if(data.error) addMsg('Erro: '+data.error);
+    else {
+      if(data.reply) addMsg(data.reply);
+      if(data.imageUrl) addMsg('Imagem gerada: ' + data.imageUrl);
+      if(data.videoUrl) addMsg('Vídeo gerado: ' + data.videoUrl);
+      if(data.ttsUrl) {
+        addMsg('Áudio gerado. Tocando...');
+        const a = new Audio(data.ttsUrl); a.play();
+      }
+    }
+  }catch(err){ addMsg('Erro de rede: '+err.message); }
 }
 </script>
+</body>
+</html>
