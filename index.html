@@ -1,43 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AZY IA</title>
-  <style>
-    body { font-family: Arial; background: #111; color: #fff; padding: 20px; }
-    .box { max-width: 600px; margin: auto; padding: 20px; background: #222; border-radius: 10px; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: none; }
-    button { background: #ff0080; color: #fff; font-weight: bold; }
-    button:hover { opacity: 0.8; }
-    #response { margin-top: 20px; padding: 15px; background: #333; border-radius: 8px; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h1>AZY IA</h1>
-    <p>Sua inteligência artificial feminina e avançada.</p>
-
-    <input id="userInput" placeholder="Digite sua pergunta..." />
-
-    <button onclick="sendMessage()">Enviar</button>
-
-    <div id="response"></div>
-  </div>
-
 <script>
 async function sendMessage() {
-  const message = document.getElementById("userInput").value;
+  const input = document.getElementById("inputMessage");
+  const text = input.value.trim();
+  if (!text) return;
 
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
-  });
+  // mostrar "carregando" opcional
+  document.getElementById("response").innerText = "Carregando...";
 
-  const data = await res.json();
-  document.getElementById("response").innerText = data.reply;
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await res.json();
+
+    // se vier erro do backend, mostrar
+    if (!res.ok) {
+      document.getElementById("response").innerText = data?.error || "Erro desconhecido";
+      console.error("Resposta do servidor:", data);
+      return;
+    }
+
+    // exibir reply (ou mensagem de erro se não existir)
+    document.getElementById("response").innerText = data?.reply ?? "Sem resposta (reply undefined)";
+  } catch (err) {
+    console.error("Erro ao chamar /api/chat", err);
+    document.getElementById("response").innerText = "Erro ao conectar ao servidor";
+  }
 }
 </script>
-</body>
-</html>
